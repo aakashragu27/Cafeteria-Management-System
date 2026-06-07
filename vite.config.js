@@ -5,4 +5,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   base : '/Cafeteria-Management-System/',
   plugins: [react()],
+  server: {
+    watch: {
+      ignored: ['**/.vs/**', '**/node_modules/**', '**/dist/**', '**/.git/**']
+    }
+  }
 });
