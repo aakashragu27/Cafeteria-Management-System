@@ -14,7 +14,7 @@ function Footer() {
       }}
     >
       <h5>
-        Made with <i className="fa-regular fa-heart "></i> by Mukesh  
+        Made with <i className="fa-regular fa-heart "></i> by Aakash  
       </h5>
     </div>
       <div

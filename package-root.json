@@ -1,0 +1,21 @@
+{
+  "name": "cafeteria-website",
+  "version": "1.0.0",
+  "description": "Full-stack cafeteria ordering system",
+  "private": true,
+  "scripts": {
+    "frontend": "npm run dev",
+    "backend": "cd backend && npm run dev",
+    "install-all": "npm install && cd backend && npm install",
+    "seed": "cd backend && npm run seed"
+  },
+  "keywords": [
+    "cafeteria",
+    "ordering",
+    "react",
+    "express",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "ISC"
+}
