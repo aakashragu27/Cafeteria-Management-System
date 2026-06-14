@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react'
 import { Link } from 'react-router-dom'
+import { createOrder } from '../services/api'
 
 const CartSpan = ({ item, updateItemQuantity }) => {
 
@@ -65,8 +66,8 @@ const CartSpan = ({ item, updateItemQuantity }) => {
 }
 
 function OrderNow(props) {
-  // cart items
-  const { cartItems, setCartItems } = props
+  // cart items and order details from parent
+  const { cartItems, setCartItems, orderDetails, setOrderDetails, orderFormData, setOrderFormData } = props
 
   console.log("her" ,cartItems)
 
@@ -98,20 +99,14 @@ function OrderNow(props) {
   const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0)
   const totalSelectedItems = items.length;
 
-  //forms
-  const [details, setDetails] = useState('')
-  const [formData, setFormData] = useState({
-    email: '',
-    phone: '',
-    option: '',
-    date: ''
-  })  
+  // Calculate today's date in YYYY-MM-DD format for date input min attribute
+  const today = new Date();
+  const todayString = today.toISOString().split('T')[0];
 
-  const [detailsContent, setDetailsContent] = useState(null)
-
+  //forms - using parent state now
   const handleChange = event => {
     const { name, value } = event.target
-    setFormData(prevState => ({
+    setOrderFormData(prevState => ({
       ...prevState,
       [name]: value
     }))
@@ -119,21 +114,23 @@ function OrderNow(props) {
 
   const handleSubmit = event => {
     event.preventDefault()
+    // Validate that all fields are filled
+    if (!orderFormData.name || !orderFormData.email || !orderFormData.phone || !orderFormData.option || !orderFormData.date) {
+      alert('Please fill in all fields')
+      return
+    }
     const content = (
       <div>
-        <p>Email: {formData.email}</p>
-        <p>Phone: {formData.phone}</p>
-        <p>Receiving as: {formData.option}</p>
-        <p>Date: {formData.date}</p>
+        <p>Name: {orderFormData.name}</p>
+        <p>Email: {orderFormData.email}</p>
+        <p>Phone: {orderFormData.phone}</p>
+        <p>Receiving as: {orderFormData.option}</p>
+        <p>Date: {orderFormData.date}</p>
       </div>
     )
-    setDetailsContent(content)
-    setFormData({
-      email: '',
-      phone: '',
-      option: '',
-      date: ''
-    })
+    setOrderDetails(content)
+    // ✅ FIX: Don't clear form data here - it's needed for checkout
+    // Form data will be cleared only after successful order submission in checkOut()
   }
 
   //conditional
@@ -146,14 +143,14 @@ function OrderNow(props) {
     window.scrollTo(0, document.body.scrollHeight - 1000);
   };
 
-  const checkOut = () => {
+  const checkOut = async () => {
     //check if cart is empty
     if (items.length === 0) {
       alert('Please add items to cart')
       return
     }
     //check if cart has items and details are filled
-    if (detailsContent === null && items.length > 0) {
+    if (orderDetails === null && items.length > 0) {
       alert('Please fill the order details ! Click EDIT');
 
       window.scrollTo(0, 
@@ -164,9 +161,41 @@ function OrderNow(props) {
       return
     }
 
-    alert("Order Placed !!. Thank You.");
-    setItems([])
-    setCartItems([])
+    // Prepare order data to send to backend using name from form
+    const orderData = {
+      customerName: orderFormData.name.trim(),
+      email: orderFormData.email.trim(),
+      phone: orderFormData.phone.trim(),
+      items: items.map(item => ({
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity
+      })),
+      totalPrice: Math.floor(total + total * 0.02 * totalSelectedItems),
+      deliveryAddress: orderFormData.option === 'delivery' ? 'To be confirmed' : 'Pickup',
+      specialNotes: `Receiving as: ${orderFormData.option}, Date: ${orderFormData.date}`
+    };
+
+    try {
+      const response = await createOrder(orderData);
+      console.log('Order created successfully:', response.data);
+      alert("Order Placed Successfully! Order ID: " + response.data._id);
+
+      // Clear cart and form data after successful submission
+      setItems([])
+      setCartItems([])
+      setOrderDetails(null)
+      setOrderFormData({
+        name: '',
+        email: '',
+        phone: '',
+        option: '',
+        date: ''
+      })
+    } catch (error) {
+      console.error('Error creating order:', error);
+      alert('Error placing order: ' + (error.response?.data?.error || error.message));
+    }
   }
 
 
@@ -317,6 +346,23 @@ function OrderNow(props) {
                         <form>
                           <div className='mb-3'>
                             <label
+                              htmlFor='name'
+                              className='form-label text-info-emphasis'
+                            >
+                              Customer Name
+                            </label>
+                            <input
+                              type='text'
+                              className='form-control border-secondary '
+                              id='name'
+                              name='name'
+                              placeholder='Enter your full name'
+                              onChange={handleChange}
+                              value={orderFormData.name}
+                            />
+                          </div>
+                          <div className='mb-3'>
+                            <label
                               htmlFor='email'
                               className='form-label text-info-emphasis'
                             >
@@ -329,6 +375,7 @@ function OrderNow(props) {
                               name='email'
                               aria-describedby='emailHelp'
                               onChange={handleChange}
+                              value={orderFormData.email}
                             />
                             <div id='emailHelp' className='form-text'>
                               We'll never share your email with anyone else.
@@ -347,6 +394,7 @@ function OrderNow(props) {
                               name='phone'
                               id='phone'
                               onChange={handleChange}
+                              value={orderFormData.phone}
                             />
                           </div>
                           <div className='mb-3'>
@@ -365,6 +413,7 @@ function OrderNow(props) {
                                   id='pickup'
                                   value='pickup'
                                   onChange={handleChange}
+                                  checked={orderFormData.option === 'pickup'}
                                 />
                                 <label
                                   className='form-check-label text-black'
@@ -381,6 +430,7 @@ function OrderNow(props) {
                                   id='delivery'
                                   value='delivery'
                                   onChange={handleChange}
+                                  checked={orderFormData.option === 'delivery'}
                                 />
                                 <label
                                   className='form-check-label text-black'
@@ -404,6 +454,8 @@ function OrderNow(props) {
                               name='date'
                               id='date'
                               onChange={handleChange}
+                              value={orderFormData.date}
+                              min={todayString}
                             />
                           </div>
                         </form>
@@ -442,15 +494,16 @@ function OrderNow(props) {
                   to update your order info
                 </h1>
               </div>
-              {detailsContent}
+              {orderDetails}
               <button type='button'
-                className={` ${clicked ? '' : 'd-none'} btn btn-danger `}
+                className={` ${orderDetails !== null ? '' : 'd-none'} btn btn-danger `}
                 onClick={
                   //reset form data
                   () => {
-                    setDetailsContent(null)
+                    setOrderDetails(null)
                     setClicked(false)
-                    setFormData({
+                    setOrderFormData({
+                      name: '',
                       email: '',
                       phone: '',
                       option: '',

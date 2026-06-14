@@ -12,11 +12,19 @@ import Order from "./Order/OrderNow";
 function App() {
 
   const [cartItems, setCartItems] = useState([]);
+  const [orderDetails, setOrderDetails] = useState(null);
+  const [orderFormData, setOrderFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    option: '',
+    date: ''
+  });
 
   const addToCart = (itemName) => {
     setCartItems([...cartItems, itemName]);
   };
-  
+
 
 
   return (
@@ -26,7 +34,7 @@ function App() {
         <Route path="/" element={<Landing />}></Route>
         <Route path="/menu" element={<Menu addToCart={addToCart} cartItems={cartItems} setCartItems={setCartItems}/>} />
         <Route path="/events" element={<Event />} />
-        <Route path="/order" element={<Order cartItems={cartItems}  setCartItems={setCartItems} />} />
+        <Route path="/order" element={<Order cartItems={cartItems} setCartItems={setCartItems} orderDetails={orderDetails} setOrderDetails={setOrderDetails} orderFormData={orderFormData} setOrderFormData={setOrderFormData} />} />
       </Routes>
       <Footer></Footer>
     </HashRouter>
